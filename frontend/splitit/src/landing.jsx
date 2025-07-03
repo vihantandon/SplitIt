@@ -1,7 +1,11 @@
 import { Calculator, Users, Smartphone } from 'lucide-react'
 import './landing.css'
+import {useNavigate} from 'react-router-dom'
 
 function landing() {
+
+const navigate = useNavigate()
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -16,9 +20,9 @@ function landing() {
             <span className="logo-text">SplitIt</span>
           </div>
           <div className="nav-buttons">
-            <button className="nav-button">Your Groups</button>
-            <button className="nav-button">Create Group</button>
-            <button className="nav-button">Add Expense</button>
+            <button className="nav-button" onClick={() => navigate('/signin')}>Your Groups</button>
+            <button className="nav-button" onClick={() => navigate('/signin')}>Create Group</button>
+            <button className="nav-button" onClick={() => navigate('/signin')}>Add Expense</button>
           </div>
         </div>
       </header>
@@ -31,7 +35,7 @@ function landing() {
             The easiest way to split bills with friends, roommates, and groups. Track expenses, settle debts, and keep
             everyone happy.
           </p>
-          <button className="cta-button">Get Started Free</button>
+          <button className="cta-button" onClick={() => navigate('/signin')}>Get Started</button>
         </div>
       </section>
 
@@ -85,7 +89,7 @@ function landing() {
           <p className="cta-subtitle">
             Join thousands of users who have simplified their shared expenses.
           </p>
-          <button className="cta-button">Start Splitting Now</button>
+          <button className="cta-button" onClick={() => navigate('/signin')}>Start Splitting Now</button>
         </div>
       </section>
 

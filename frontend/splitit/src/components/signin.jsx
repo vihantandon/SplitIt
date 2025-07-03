@@ -91,9 +91,9 @@ function signin() {
           </div>
 
           {/* Forgot Password */}
-          <div className="forgot-password">
+          {/* <div className="forgot-password">
             <a href="#" className="forgot-link">Forgot your password?</a>
-          </div>
+          </div> */}
 
           {/* Sign In Button */}
           <button type="submit" className="signin-button">
