@@ -1,5 +1,6 @@
 import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react'
 import { useState } from 'react'
+import axios from 'axios';
 import './signup.css'
 
 function signup() {
@@ -19,10 +20,19 @@ function signup() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     console.log('Sign up with:', formData)
-    // Handle sign up logic here
+
+
+    try{
+      const res = await axios.post('http://localhost:3000/api/signup', formData);
+      console.log(res.data);
+      alert('Signup successful');
+    } catch(err){
+      console.error('SignUp failed: ',err);
+      alert('Signup failed')
+    }
   }
 
   const handleGoogleSignUp = () => {

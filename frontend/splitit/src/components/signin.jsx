@@ -1,6 +1,7 @@
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import {useNavigate} from 'react-router-dom'
+import axios from 'axios'
 import './signin.css'
 
 function signin() {
@@ -20,10 +21,19 @@ function signin() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     console.log('Sign in with:', formData)
-    // Handle sign in logic here
+
+    try{
+      const res = await axios.post('http://localhost:3000/api/signin', formData);
+      console.log(res.data);
+      // alert('Login successful');
+      navigate('/');
+    } catch(err){
+      console.error('SignUp failed: ',err);
+      alert('Wrong Credentials')
+    }
   }
 
   const handleGoogleSignIn = () => {
@@ -92,11 +102,6 @@ function signin() {
               </button>
             </div>
           </div>
-
-          {/* Forgot Password */}
-          {/* <div className="forgot-password">
-            <a href="#" className="forgot-link">Forgot your password?</a>
-          </div> */}
 
           {/* Sign In Button */}
           <button type="submit" className="signin-button">
