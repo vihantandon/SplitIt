@@ -1,8 +1,11 @@
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
+import {useNavigate} from 'react-router-dom'
 import './signin.css'
 
 function signin() {
+  const navigate = useNavigate()
+
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -119,7 +122,7 @@ function signin() {
 
         {/* Sign Up Link */}
         <div className="signup-link">
-          <p>Don't have an account? <a href="#" className="signup-text">Sign up</a></p>
+          <p>Don't have an account? <button className="signup-text" onClick = {()=> navigate('/signup')}>Sign up</button></p>
         </div>
       </div>
     </div>
