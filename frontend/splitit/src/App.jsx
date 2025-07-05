@@ -4,6 +4,8 @@ import axios from "axios";
 import Landing from "./landing";
 import Signin from "./components/signin"
 import Signup from "./components/signup";
+import CreateGroup from "./components/creategrp";
+import AddExpense from "./components/addexpense";
 
 function App(){
 
@@ -21,6 +23,8 @@ function App(){
             <Route path = "/" element={<Landing/>}/>
             <Route path = "/signin" element={<Signin/>}/>
             <Route path = "/signup" element={<Signup/>}/>
+            <Route path = "/creategrp" element={<CreateGroup/>}/>
+            <Route path = "/addexpense" element={<AddExpense/>}/>
          </Routes>
         </BrowserRouter>
     )

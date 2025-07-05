@@ -1,31 +1,15 @@
 import { Calculator, Users, Smartphone } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import Navbar from './components/navbar'
 import './landing.css'
-import {useNavigate} from 'react-router-dom'
 
 function landing() {
-
-const navigate = useNavigate()
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="header">
-        <div className="header-container">
-          <div className="logo-container">
-            <div className="logo-icon">
-              <svg className="calculator-icon" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z" />
-              </svg>
-            </div>
-            <span className="logo-text">SplitIt</span>
-          </div>
-          <div className="nav-buttons">
-            <button className="nav-button" onClick={() => navigate('/signin')}>Your Groups</button>
-            <button className="nav-button" onClick={() => navigate('/signin')}>Create Group</button>
-            <button className="nav-button" onClick={() => navigate('/signin')}>Add Expense</button>
-          </div>
-        </div>
-      </header>
+      {/* Use Navbar Component */}
+      <Navbar />
 
       {/* Hero Section */}
       <section className="hero-section">
@@ -109,4 +93,4 @@ const navigate = useNavigate()
   )
 }
 
-export default landing
+export default landing;

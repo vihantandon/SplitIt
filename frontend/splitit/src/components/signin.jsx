@@ -29,7 +29,7 @@ function signin() {
       const res = await axios.post('http://localhost:3000/api/signin', formData);
       console.log(res.data);
       // alert('Login successful');
-      navigate('/');
+      navigate('/addexpense');
     } catch(err){
       console.error('SignUp failed: ',err);
       alert('Wrong Credentials')

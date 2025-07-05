@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import pg from "pg"
+import bcrypt from "bcrypt";
 
 const app = express();
 const port = 3000;
@@ -29,10 +30,10 @@ app.get('/api/test', (req, res) => {
 //signup route
 app.post('/api/signup',async (req,res) => {
   const {firstName, lastName, email, password} = req.body;
-
+  const passwordHash = await bcrypt.hash(password, 13);
   try{
     await db.query('INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4)',
-      [firstName, lastName, email, password]
+      [firstName, lastName, email, passwordHash]
     );
     res.json({message: 'User signed up successfully!'});
   }catch(err){
@@ -53,7 +54,7 @@ app.post('/api/signin',async (req,res)=>{
 
     const user = result.rows[0];
 
-    if(user.password != password)
+    if(user.password != null && !(await bcrypt.compare(password, user.password)))
       return res.status(401).json({ error: 'Invalid password' });
     res.json({
       message: 'Login successful',
