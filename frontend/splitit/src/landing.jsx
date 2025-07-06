@@ -6,6 +6,16 @@ import './landing.css'
 function landing() {
   const navigate = useNavigate()
 
+  const handleGetStarted = () => {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  if (isLoggedIn) {
+    navigate('/addexpense'); // or dashboard/home page
+  } else {
+    navigate('/signin');
+  }
+};
+
+
   return (
     <div className="min-h-screen bg-white">
       {/* Use Navbar Component */}
@@ -19,7 +29,7 @@ function landing() {
             The easiest way to split bills with friends, roommates, and groups. Track expenses, settle debts, and keep
             everyone happy.
           </p>
-          <button className="cta-button" onClick={() => navigate('/signin')}>Get Started</button>
+          <button className="cta-button" onClick={handleGetStarted}>Get Started</button>
         </div>
       </section>
 
@@ -73,7 +83,7 @@ function landing() {
           <p className="cta-subtitle">
             Join thousands of users who have simplified their shared expenses.
           </p>
-          <button className="cta-button" onClick={() => navigate('/signin')}>Start Splitting Now</button>
+          <button className="cta-button" onClick={handleGetStarted}>Start Splitting Now</button>
         </div>
       </section>
 

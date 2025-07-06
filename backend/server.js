@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import pg from "pg"
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library"; 
 
+const client = new OAuth2Client("247414368917-r36k47jv56hi8dei8oi2hqdmech6qbba.apps.googleusercontent.com");
 const app = express();
 const port = 3000;
 
@@ -70,6 +72,46 @@ app.post('/api/signin',async (req,res)=>{
     res.status(500).json({ error: 'Server error during login' });
   }
 });
+
+
+// Google Sign In route
+app.post('/api/google-signin', async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: "247414368917-r36k47jv56hi8dei8oi2hqdmech6qbba.apps.googleusercontent.com"
+    });
+
+    const payload = ticket.getPayload();
+    const { email, given_name, family_name } = payload;
+
+    // Check if user already exists
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    
+    if (result.rows.length === 0) {
+      // User does not exist, create a new user
+      await db.query(
+        'INSERT INTO users (first_name, last_name, email) VALUES ($1, $2, $3)',
+        [given_name, family_name, email]
+      );
+    }
+
+    res.json({
+      message: 'Google Sign In successful',
+      user: {
+        email,
+        firstName: given_name,
+        lastName: family_name
+      }
+    });
+  } catch (error) {
+    console.error('Google Sign In error:', error);
+    res.status(500).json({ error: 'Google Sign In failed' });
+  }
+});
+
 
 
 app.listen(port,()=>{

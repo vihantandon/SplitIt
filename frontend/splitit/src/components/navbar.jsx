@@ -4,6 +4,16 @@ import './navbar.css'
 function Navbar({ activeItem = '' }) {
   const navigate = useNavigate()
 
+
+  function handleNavigation(path) {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (isLoggedIn) {
+      navigate(path);
+    } else {
+      navigate('/signin');
+    }
+  }
+
   return (
     <header className="navbar">
       <div className="navbar-container">
@@ -21,19 +31,19 @@ function Navbar({ activeItem = '' }) {
         <div className="navbar-nav">
           <button 
             className={`nav-button ${activeItem === 'groups' ? 'active' : ''}`}
-            onClick={() => navigate('/signin')}
+            onClick={() => handleNavigation('/signin')}
           >
             Your Groups
           </button>
           <button 
             className={`nav-button ${activeItem === 'create' ? 'active' : ''}`}
-            onClick={() => navigate('/signin')}
+            onClick={() => handleNavigation('/creategrp')}
           >
             Create Group
           </button>
           <button 
             className={`nav-button ${activeItem === 'expense' ? 'active' : ''}`}
-            onClick={() => navigate('/signin')}
+            onClick={() => handleNavigation('/addexpense')}
           >
             Add Expense
           </button>
