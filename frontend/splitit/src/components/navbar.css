@@ -1,4 +1,9 @@
-/* Navigation Bar */
+*{
+  margin: 0;
+  padding: 0;
+}
+
+* Navigation Bar */
 .navbar {
   background: linear-gradient(to right, #9333ea, #4f46e5);
   padding: 1rem;
@@ -15,11 +20,13 @@
 /* Logo */
 .navbar-logo {
   display: flex;
+  cursor: pointer;
   align-items: center;
   gap: 0.75rem;
   background: rgba(255, 255, 255, 0.1);
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
+  transition: all 0.2s;
 }
 
 .navbar-logo-icon {
@@ -59,6 +66,11 @@
   background: transparent;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.navbar-logo:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
 }
 
 .nav-button:hover {
@@ -144,6 +156,17 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   border-radius: 0.5rem;
   z-index: 10;
+
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
 }
 
 .logout-button {
@@ -152,13 +175,18 @@
   text-align: left;
   background: none;
   border: none;
-  color: #374151;
+  color: white;
   font-size: 0.9rem;
   cursor: pointer;
+  position: absolute;
+  bottom: 8px;
+  font-size: 18px;
+
+  transition: all 0.5s;
 }
 
 .logout-button:hover {
-  background-color: #f3f4f6;
+  transform: scale(1.1);
 }
 
 

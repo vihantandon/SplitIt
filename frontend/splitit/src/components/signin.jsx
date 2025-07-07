@@ -36,7 +36,7 @@ function signin() {
       localStorage.setItem('firstName', res.data.user.firstName || '');
       localStorage.setItem('lastName', res.data.user.lastName || '');
 
-      navigate('/addexpense');
+      navigate('/yourgroups');
     } catch(err){
       console.error('SignUp failed: ',err);
       alert('Wrong Credentials')
@@ -55,7 +55,7 @@ function signin() {
     localStorage.setItem('lastName', res.data.user.lastName || '');
     // localStorage.setItem('userImage', res.data.user.image || '');
 
-    navigate('/addexpense');
+    navigate('/yourgroups');
   } catch (err) {
     console.error('Google SignIn failed: ', err);
     alert('Google SignIn failed');

@@ -9,7 +9,7 @@ function landing() {
   const handleGetStarted = () => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
   if (isLoggedIn) {
-    navigate('/addexpense'); // or dashboard/home page
+    navigate('/yourgroups'); 
   } else {
     navigate('/signin');
   }
@@ -92,7 +92,7 @@ function landing() {
         <div className="footer-container">
           <div className="footer-logo">
             <div className="footer-icon">
-              <span>📊</span>
+              <Calculator size={24} strokeWidth={2} color='orange'/>
             </div>
             <span className="footer-text">SplitIt</span>
           </div>

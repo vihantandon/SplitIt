@@ -6,6 +6,7 @@ import Signin from "./components/signin"
 import Signup from "./components/signup";
 import CreateGroup from "./components/creategrp";
 import AddExpense from "./components/addexpense";
+import YourGroups from "./components/yourgroups";
 
 function App(){
 
@@ -25,6 +26,7 @@ function App(){
             <Route path = "/signup" element={<Signup/>}/>
             <Route path = "/creategrp" element={<CreateGroup/>}/>
             <Route path = "/addexpense" element={<AddExpense/>}/>
+            <Route path = "/yourgroups" element={<YourGroups/>}/>
          </Routes>
         </BrowserRouter>
     )
