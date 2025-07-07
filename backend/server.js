@@ -85,7 +85,7 @@ app.post('/api/google-signin', async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { email, given_name, family_name } = payload;
+    const { email, given_name, family_name, picture } = payload;
 
     // Check if user already exists
     const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -103,7 +103,8 @@ app.post('/api/google-signin', async (req, res) => {
       user: {
         email,
         firstName: given_name,
-        lastName: family_name
+        lastName: family_name,
+        image: picture
       }
     });
   } catch (error) {

@@ -29,8 +29,13 @@ function signin() {
     try{
       const res = await axios.post('http://localhost:3000/api/signin', formData);
       console.log(res.data);
-      // alert('Login successful');
+
       localStorage.setItem('isLoggedIn', true);
+      localStorage.setItem('userEmail', res.data.user.email || '');
+      // localStorage.setItem('userImage', res.data.user.image || ''); 
+      localStorage.setItem('firstName', res.data.user.firstName || '');
+      localStorage.setItem('lastName', res.data.user.lastName || '');
+
       navigate('/addexpense');
     } catch(err){
       console.error('SignUp failed: ',err);
@@ -39,18 +44,24 @@ function signin() {
   }
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    try{
-      const res = await axios.post('http://localhost:3000/api/google-signin', {
-        token: credentialResponse.credential
-      });
-      console.log(res.data);
-      localStorage.setItem('isLoggedIn', true);
-      navigate('/addexpense');
-    } catch(err){
-      console.error('Google SignIn failed: ',err);
-      alert('Google SignIn failed')
-    }
+  try {
+    const res = await axios.post('http://localhost:3000/api/google-signin', {
+      token: credentialResponse.credential
+    });
+
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userEmail', res.data.user.email || '');
+    localStorage.setItem('firstName', res.data.user.firstName || '');
+    localStorage.setItem('lastName', res.data.user.lastName || '');
+    // localStorage.setItem('userImage', res.data.user.image || '');
+
+    navigate('/addexpense');
+  } catch (err) {
+    console.error('Google SignIn failed: ', err);
+    alert('Google SignIn failed');
   }
+};
+
 
   return (
     <div className="signin-container">
