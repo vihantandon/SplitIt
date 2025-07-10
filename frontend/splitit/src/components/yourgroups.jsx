@@ -39,7 +39,7 @@ function YourGroups() {
   }
 
   const handleGroupClick = (groupId) => {
-    navigate(`/group/${groupId}`)
+    navigate(`/grpdetails/${groupId}`);
   }
 
   return (

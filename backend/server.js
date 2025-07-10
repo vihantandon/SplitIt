@@ -168,6 +168,58 @@ app.post('/api/groups', async (req, res) => {
   }
 });
 
+//Group details route
+app.get('/api/group-details/:groupId', async (req, res) => {
+  const groupId = req.params.groupId;
+
+  try {
+    // Get group name
+    const groupResult = await db.query('SELECT id, name FROM groups WHERE id = $1', [groupId]);
+    if (groupResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    const group = groupResult.rows[0];
+
+    // Get group members
+    const membersResult = await db.query(`
+      SELECT u.id, u.first_name, u.last_name, u.email
+      FROM group_members gm
+      JOIN users u ON gm.user_id = u.id
+      WHERE gm.group_id = $1
+    `, [groupId]);
+
+    // TODO: Calculate balances for each member (for now, set to 0)
+    const members = membersResult.rows.map(m => ({
+      id: m.id,
+      name: `${m.first_name} ${m.last_name}`,
+      email: m.email,
+      balance: 0 // Replace with real balance logic if needed
+    }));
+
+    res.json({
+      id: group.id,
+      name: group.name,
+      members
+    });
+  } catch (err) {
+    console.error('Error fetching group details:', err);
+    res.status(500).json({ error: 'Failed to fetch group details' });
+  }
+});
+
+//Delete group route
+app.post('/api/groups/deletegroup', async (req, res) => {
+  const { groupId } = req.body;
+  try {
+    await db.query('DELETE FROM group_members WHERE group_id = $1', [groupId]);
+    await db.query('DELETE FROM groups WHERE id = $1', [groupId]);
+    res.json({ message: 'Group deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting group:', err);
+    res.status(500).json({ error: 'Failed to delete group' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Port running on ${port}`);
 
