@@ -97,10 +97,11 @@ app.post('/api/google-signin', async (req, res) => {
         [given_name, family_name, email]
       );
     }
-
+    
     res.json({
       message: 'Google Sign In successful',
       user: {
+        id: result.rows.length > 0 ? result.rows[0].id : null, // Use existing user ID or null if new
         email,
         firstName: given_name,
         lastName: family_name,
@@ -113,9 +114,61 @@ app.post('/api/google-signin', async (req, res) => {
   }
 });
 
+//Get groups of logged-in user
+app.get('/api/user-groups/:userId', async (req, res) => {
+  const userId = req.params.userId;
 
+  try {
+    const result = await db.query(`
+      SELECT g.id, g.name
+      FROM groups g
+      JOIN group_members gm ON g.id = gm.group_id
+      WHERE gm.user_id = $1
+    `, [userId]);
 
-app.listen(port,()=>{
-    console.log(`Port running on ${port}`);
-    
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching user groups:', err);
+    res.status(500).json({ error: 'Failed to fetch user groups' });
+  }
+});
+
+//Create a new group route
+app.post('/api/groups', async (req, res) => {
+  const { groupName, inviteEmails, creatorEmail } = req.body;
+
+  try {
+    const creatorResult = await db.query('SELECT id FROM users WHERE email = $1', [creatorEmail]);
+    if (creatorResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Creator not found' });
+    }
+    const creatorId = creatorResult.rows[0].id;
+
+    const groupResult = await db.query(
+      'INSERT INTO groups (name, created_by) VALUES ($1, $2) RETURNING id',
+      [groupName, creatorId]
+    );
+    const groupId = groupResult.rows[0].id;
+
+    // Add creator as a member
+    await db.query('INSERT INTO group_members (user_id, group_id) VALUES ($1, $2)', [creatorId, groupId]);
+
+    // Add invited users as members (if they exist)
+    for (const email of inviteEmails) {
+      const userResult = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+      if (userResult.rows.length > 0) {
+        const userId = userResult.rows[0].id;
+        await db.query('INSERT INTO group_members (user_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, groupId]);
+      }
+    }
+    res.json({ message: 'Group created successfully', groupId });
+  } catch (err) {
+    console.error('Error creating group:', err);
+    res.status(500).json({ error: 'Failed to create group' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Port running on ${port}`);
+
 })

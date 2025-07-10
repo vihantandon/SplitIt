@@ -33,6 +33,7 @@ function signin() {
       localStorage.setItem('isLoggedIn', true);
       localStorage.setItem('userEmail', res.data.user.email || '');
       // localStorage.setItem('userImage', res.data.user.image || ''); 
+      localStorage.setItem('userId', res.data.user.id || '');
       localStorage.setItem('firstName', res.data.user.firstName || '');
       localStorage.setItem('lastName', res.data.user.lastName || '');
 
@@ -50,6 +51,7 @@ function signin() {
     });
 
     localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userId', res.data.user.id || ''); 
     localStorage.setItem('userEmail', res.data.user.email || '');
     localStorage.setItem('firstName', res.data.user.firstName || '');
     localStorage.setItem('lastName', res.data.user.lastName || '');

@@ -2,8 +2,11 @@ import { Users, Mail, Plus, Bell, User } from 'lucide-react'
 import { useState } from 'react'
 import Navbar from './navbar'
 import './creategrp.css'
+import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 
 function creategroup() {
+  const Navigate = useNavigate();
   const [formData, setFormData] = useState({
     groupName: '',
     inviteEmails: ['']
@@ -46,7 +49,19 @@ function creategroup() {
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log('Create group:', formData)
-    // Handle group creation logic here
+    try{
+      const creatorEmail = localStorage.getItem('userEmail');
+      const res = axios.post('http://localhost:3000/api/groups', {
+        groupName: formData.groupName,
+        inviteEmails: formData.inviteEmails,
+        creatorEmail: creatorEmail
+      });
+      alert('Group created successfully');
+      setFormData({groupName: '',inviteEmails: ['']});
+      Navigate('/yourgroups');
+    } catch (error) {
+      console.error('Error creating group:', error);
+    }
   }
 
   return (

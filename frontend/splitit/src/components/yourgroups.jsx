@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Users, Plus } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import Navbar from "./navbar"
@@ -5,38 +6,33 @@ import "./yourgroups.css"
 
 function YourGroups() {
   const navigate = useNavigate()
+  const [groups, setGroups] = useState([]) // Ensure groups is initialized as an array
 
-  // Sample groups data
-  const groups = [
-    {
-      id: 1,
-      name: "Weekend Trip",
-      status: "You lent $20 to Alex",
-      type: "lent",
-      amount: 20,
-    },
-    {
-      id: 2,
-      name: "Dinner Party",
-      status: "You owe $15 to Sarah",
-      type: "owe",
-      amount: 15,
-    },
-    {
-      id: 3,
-      name: "Movie Night",
-      status: "You are owed $5 by Chris",
-      type: "owed",
-      amount: 5,
-    },
-    {
-      id: 4,
-      name: "Vacation",
-      status: "You owe $40 to Emily",
-      type: "owe",
-      amount: 40,
-    },
-  ]
+  const userId = localStorage.getItem("userId")
+
+  useEffect(() => {
+    async function fetchGroups() {
+      try {
+        const res = await fetch(`http://localhost:3000/api/user-groups/${userId}`)
+        const data = await res.json()
+
+        // Ensure data is an array before setting
+        if (Array.isArray(data)) {
+          setGroups(data)
+        } else {
+          console.warn("Unexpected response format:", data)
+          setGroups([]) // fallback
+        }
+      } catch (error) {
+        console.error("Error fetching groups:", error)
+        setGroups([]) // fallback on error
+      }
+    }
+
+    if (userId) {
+      fetchGroups()
+    }
+  }, [userId])
 
   const handleNewGroup = () => {
     navigate("/creategrp")
@@ -67,7 +63,9 @@ function YourGroups() {
               <div className="empty-state">
                 <Users className="empty-icon" />
                 <h3 className="empty-title">No groups yet</h3>
-                <p className="empty-description">Create your first group to start splitting expenses with friends.</p>
+                <p className="empty-description">
+                  Create your first group to start splitting expenses with friends.
+                </p>
                 <button className="create-first-group-btn" onClick={handleNewGroup}>
                   Create your first group
                 </button>
@@ -75,13 +73,17 @@ function YourGroups() {
             ) : (
               <div className="groups-list">
                 {groups.map((group) => (
-                  <div key={group.id} className="group-card" onClick={() => handleGroupClick(group.id)}>
+                  <div
+                    key={group.id}
+                    className="group-card"
+                    onClick={() => handleGroupClick(group.id)}
+                  >
                     <div className="group-icon">
                       <Users className="users-icon" />
                     </div>
                     <div className="group-info">
                       <h3 className="group-name">{group.name}</h3>
-                      <p className={`group-status ${group.type}`}>{group.status}</p>
+                      <p className="group-status">Click to view details</p>
                     </div>
                   </div>
                 ))}
