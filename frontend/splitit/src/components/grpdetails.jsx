@@ -1,6 +1,7 @@
 "use client"
-import { useEffect,useState } from "react"
-import { ArrowLeft, Plus, DollarSign, Trash2, Users, CheckCircle } from "lucide-react"
+
+import { useEffect, useState } from "react"
+import { ArrowLeft, Plus, DollarSign, Trash2, Users, CheckCircle, UserPlus, Mail } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
 import Navbar from "./navbar"
 import axios from "axios"
@@ -12,7 +13,9 @@ function GroupDetail() {
   const { groupId } = useParams()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showSettleModal, setShowSettleModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
   const [selectedMember, setSelectedMember] = useState(null)
+  const [inviteEmail, setInviteEmail] = useState("")
 
   useEffect(() => {
     async function fetchGroupDetails() {
@@ -39,6 +42,10 @@ function GroupDetail() {
     navigate("/addexpense")
   }
 
+  const handleInviteMember = () => {
+    setShowInviteModal(true)
+  }
+
   const handleSettleMoney = (member) => {
     setSelectedMember(member)
     setShowSettleModal(true)
@@ -49,13 +56,13 @@ function GroupDetail() {
   }
 
   const confirmDelete = async () => {
-    try{
-            await axios.post('http://localhost:3000/api/groups/deletegroup', { groupId })
-            setShowDeleteModal(false)
-            navigate("/yourgroups")
-    }catch(err){
-        console.error("Error deleting group:", err)
-        alert("Failed to delete group")
+    try {
+      await axios.post("http://localhost:3000/api/groups/deletegroup", { groupId })
+      setShowDeleteModal(false)
+      navigate("/yourgroups")
+    } catch (err) {
+      console.error("Error deleting group:", err)
+      alert("Failed to delete group")
     }
   }
 
@@ -64,6 +71,24 @@ function GroupDetail() {
     console.log("Settling with:", selectedMember.name)
     setShowSettleModal(false)
     setSelectedMember(null)
+  }
+
+  const confirmInvite = async () => {
+    try {
+      await axios.post("http://localhost:3000/api/groups/invite", {
+        groupId,
+        email: inviteEmail,
+      })
+      console.log("Inviting:", inviteEmail)
+      setShowInviteModal(false)
+      setInviteEmail("")
+      const res = await fetch(`http://localhost:3000/api/group-details/${groupId}`);
+      const data = await res.json();
+      setGroup(data);
+    } catch (err) {
+      console.error("Error inviting member:", err)
+      alert("Failed to send invitation")
+    }
   }
 
   const getBalanceText = (member) => {
@@ -108,10 +133,16 @@ function GroupDetail() {
               </div>
             </div>
 
-            <button className="add-expense-btn" onClick={handleAddExpense}>
-              <Plus className="plus-icon" />
-              Add Expense
-            </button>
+            <div className="group-actions">
+              <button className="invite-btn" onClick={handleInviteMember}>
+                <UserPlus className="invite-icon" />
+                Invite
+              </button>
+              <button className="add-expense-btn" onClick={handleAddExpense}>
+                <Plus className="plus-icon" />
+                Add Expense
+              </button>
+            </div>
           </div>
 
           {/* Members List */}
@@ -126,10 +157,7 @@ function GroupDetail() {
                 >
                   <div className="member-info">
                     <div className="member-avatar initials">
-                    {
-                        // Try to use first letter of firstName, else first letter of email
-                        (member.name?.split(' ')[0]?.[0] || member.email?.[0] || '?').toUpperCase()
-                    }
+                      {(member.name?.split(" ")[0]?.[0] || member.email?.[0] || "?").toUpperCase()}
                     </div>
                     <div className="member-details">
                       <h3 className="member-name">{member.name}</h3>
@@ -191,6 +219,37 @@ function GroupDetail() {
               </button>
               <button className="confirm-settle-btn" onClick={confirmSettle}>
                 Mark as Settled
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Member Modal */}
+      {showInviteModal && (
+        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Invite Member</h3>
+            <p className="modal-text">Enter the email address of the person you want to invite to "{group.name}".</p>
+
+            <div className="invite-input-wrapper">
+              <Mail className="invite-input-icon" />
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="invite-input"
+                placeholder="Enter email address"
+                autoFocus
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setShowInviteModal(false)}>
+                Cancel
+              </button>
+              <button className="confirm-invite-btn" onClick={confirmInvite} disabled={!inviteEmail.trim()}>
+                Send Invitation
               </button>
             </div>
           </div>

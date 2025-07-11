@@ -220,6 +220,23 @@ app.post('/api/groups/deletegroup', async (req, res) => {
   }
 });
 
+// Invite member route from group details
+app.post('/api/groups/invite',async (req, res) => {
+  const {groupId,email} = req.body;
+  try {
+    const userResult = await db.query('select id from users where email = $1',[email]);
+    if(userResult.rows.length === 0){
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const userId = userResult.rows[0].id;
+    await db.query('insert into group_members (user_id,group_id) values ($1,$2) on conflict do nothing', [userId,groupId]);
+    res.json({ message: 'Member invited successfully' });
+  }catch (err){
+    console.error('Error inviting member:', err);
+    res.status(500).json({ error: 'Failed to invite member' });
+  }
+})
+
 app.listen(port, () => {
   console.log(`Port running on ${port}`);
 
