@@ -16,6 +16,11 @@ function GroupDetail() {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [selectedMember, setSelectedMember] = useState(null)
   const [inviteEmail, setInviteEmail] = useState("")
+  const [expenses, setExpenses] = useState([])
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [memberSplits, setMemberSplits] = useState([]);
+
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     async function fetchGroupDetails() {
@@ -29,6 +34,45 @@ function GroupDetail() {
     }
     if (groupId) fetchGroupDetails()
   }, [groupId])
+
+  useEffect(() => {
+    async function fetchExpenses() {
+      try {
+        const res = await fetch(`http://localhost:3000/api/groups/${groupId}/expenses`)
+        const data = await res.json()
+        setExpenses(data)
+      } catch (err) {
+        console.error("Error fetching expenses:", err)
+      }
+    }
+    if (groupId) fetchExpenses()
+  }, [groupId])
+
+  useEffect(() => {
+    async function fetchMemberSplits() {
+      const res = await fetch(`http://localhost:3000/api/groups/${groupId}/member-splits`);
+      const data = await res.json();
+      setMemberSplits(data);
+    }
+    if (groupId) fetchMemberSplits();
+  }, [groupId]);
+
+  const handleSettle = async (expenseId) => {
+  try {
+    await axios.post(`http://localhost:3000/api/expenses/${expenseId}/settle`, { userId });
+    // Refresh expenses after settling
+    const res = await fetch(`http://localhost:3000/api/groups/${groupId}/expenses`);
+    const data = await res.json();
+    setExpenses(data);
+
+    // Refresh memberSplits after settling
+    const splitsRes = await fetch(`http://localhost:3000/api/groups/${groupId}/member-splits`);
+    const splitsData = await splitsRes.json();
+    setMemberSplits(splitsData);
+  } catch (err) {
+    alert("Failed to settle expense");
+  }
+};
 
   if (!group) {
     return <div>Loading group details...</div>
@@ -150,40 +194,69 @@ function GroupDetail() {
             <h2 className="section-title">Members & Balances</h2>
             <div className="members-list">
               {group.members.map((member, index) => (
-                <div
-                  key={member.id}
-                  className={`member-card ${getBalanceColor(member)}`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="member-info">
-                    <div className="member-avatar initials">
-                      {(member.name?.split(" ")[0]?.[0] || member.email?.[0] || "?").toUpperCase()}
-                    </div>
-                    <div className="member-details">
-                      <h3 className="member-name">{member.name}</h3>
-                      <p className={`member-balance ${getBalanceColor(member)}`}>{getBalanceText(member)}</p>
-                    </div>
+              <div
+                key={member.id}
+                className={`member-card ${getBalanceColor(member)}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="member-info">
+                  <div className="member-avatar initials">
+                    {(member.name?.split(" ")[0]?.[0] || member.email?.[0] || "?").toUpperCase()}
                   </div>
-
-                  {member.balance !== 0 && member.name !== "You" && (
-                    <button className="settle-btn" onClick={() => handleSettleMoney(member)}>
-                      <DollarSign className="settle-icon" />
-                      Settle Up
-                    </button>
-                  )}
-
-                  {member.balance === 0 && (
-                    <div className="settled-badge">
-                      <CheckCircle className="check-icon" />
-                      Settled
-                    </div>
-                  )}
+                  <div className="member-details">
+                    <h3 className="member-name">{member.name}</h3>
+                    <p className={`member-balance ${getBalanceColor(member)}`}>{getBalanceText(member)}</p>
+                  </div>
                 </div>
-              ))}
+
+                {/* Expenses for this member */}
+                <div className="member-expenses-list">
+                  {memberSplits
+                    .filter(split => split.user_id === member.id && parseFloat(split.amount_owed) > 0)
+                    .map(split => (
+                      <div key={split.expense_id} className="member-expense-detail">
+                        <span>
+                          <strong>{split.description}</strong> - ₹{split.amount_owed}
+                        </span>
+                        <span style={{ fontSize: "0.95em", color: "#64748b" }}>
+                          Paid by: {split.paid_by_name}
+                        </span>
+                        {split.paid_by == userId && !split.settled && (
+                          <button
+                            className="settle-btn"
+                            onClick={() => {
+                              setSelectedExpense(expenses.find(e => e.id === split.expense_id));
+                              setShowSettleModal(true);
+                            }}
+                          >
+                            <DollarSign className="settle-icon" />
+                            Settle Up
+                          </button>
+                        )}
+                        {/* Optionally show settled badge if you want */}
+                      </div>
+                    ))}
+                </div>
+                {member.balance !== 0 && member.name !== "You" && (
+                  <button className="settle-btn" onClick={() => handleSettleMoney(member)}>
+                    <DollarSign className="settle-icon" />
+                    Settle Up
+                  </button>
+                )}
+
+                {member.balance === 0 && (
+                  <div className="settled-badge">
+                    <CheckCircle className="check-icon" />
+                    Settled
+                  </div>
+                )}
+              </div>
+            ))}
             </div>
           </div>
         </div>
       </main>
+
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
@@ -204,26 +277,52 @@ function GroupDetail() {
       )}
 
       {/* Settle Money Modal */}
-      {showSettleModal && selectedMember && (
-        <div className="modal-overlay" onClick={() => setShowSettleModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Settle Money</h3>
-            <p className="modal-text">
-              {selectedMember.balance > 0
-                ? `${selectedMember.name} will pay you $${Math.abs(selectedMember.balance)}`
-                : `You will pay ${selectedMember.name} $${Math.abs(selectedMember.balance)}`}
-            </p>
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={() => setShowSettleModal(false)}>
-                Cancel
-              </button>
-              <button className="confirm-settle-btn" onClick={confirmSettle}>
-                Mark as Settled
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showSettleModal && (selectedMember || selectedExpense) && (
+  <div className="modal-overlay" onClick={() => {
+    setShowSettleModal(false);
+    setSelectedMember(null);
+    setSelectedExpense(null);
+  }}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <h3 className="modal-title">Settle Money</h3>
+      <p className="modal-text">
+        {selectedExpense ? (
+          <>
+            Settle <strong>{selectedExpense.description}</strong> of ₹{selectedExpense.amount}?<br />
+            Paid by: {selectedExpense.paid_by_name}
+          </>
+        ) : selectedMember ? (
+          selectedMember.balance > 0
+            ? `${selectedMember.name} will pay you $${Math.abs(selectedMember.balance)}`
+            : `You will pay ${selectedMember.name} $${Math.abs(selectedMember.balance)}`
+        ) : null}
+      </p>
+      <div className="modal-actions">
+        <button className="cancel-btn" onClick={() => {
+          setShowSettleModal(false);
+          setSelectedMember(null);
+          setSelectedExpense(null);
+        }}>
+          Cancel
+        </button>
+        <button
+          className="confirm-settle-btn"
+          onClick={async () => {
+            if (selectedExpense) {
+              await handleSettle(selectedExpense.id);
+              setSelectedExpense(null);
+            } else if (selectedMember) {
+              confirmSettle();
+            }
+            setShowSettleModal(false);
+          }}
+        >
+          Mark as Settled
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Invite Member Modal */}
       {showInviteModal && (

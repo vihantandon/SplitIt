@@ -237,6 +237,79 @@ app.post('/api/groups/invite',async (req, res) => {
   }
 })
 
+// Add expense route
+app.post('/api/groups/:groupId/expenses', async (req, res) => {
+  const {description, amount, paidBy, splits} = req.body;
+  const groupId = req.params.groupId;
+  try{
+    const expenseResult = await db.query('INSERT INTO expenses (group_id, description, amount, paid_by) VALUES ($1, $2, $3, $4) RETURNING id',
+      [groupId, description, amount, paidBy]);
+      const expenseId = expenseResult.rows[0].id;
+
+      for (const split of splits) {
+  if (split.userId == paidBy) continue; // Skip the one who paid
+  await db.query(
+    'INSERT INTO expense_splits (expense_id, user_id, amount_owed) VALUES ($1, $2, $3)',
+    [expenseId, split.userId, split.amount]
+  );
+}
+
+      res.json({ message: 'Expense added successfully', expenseId });
+  } catch (err) {
+    console.error('Error adding expense:', err);
+    res.status(500).json({ error: 'Failed to add expense' });
+  }
+});
+
+//settle expense route
+app.post('/api/expenses/:expenseId/settle', async (req, res) => {
+  const { userId } = req.body;
+  const expenseId = req.params.expenseId;
+  // Only allow if userId matches paid_by
+  const result = await db.query('SELECT paid_by FROM expenses WHERE id = $1', [expenseId]);
+  if (result.rows.length === 0 || result.rows[0].paid_by != userId) {
+    return res.status(403).json({ error: 'Not allowed' });
+  }
+  // Mark as settled (add a settled column or a settlements table)
+  await db.query('UPDATE expenses SET settled = true WHERE id = $1', [expenseId]);
+  res.json({ message: 'Expense settled' });
+});
+
+app.get('/api/groups/:groupId/expenses', async (req, res) => {
+  const { groupId } = req.params;
+  try {
+    const result = await db.query(
+      `SELECT e.*, u.first_name || ' ' || u.last_name AS paid_by_name
+       FROM expenses e
+       JOIN users u ON e.paid_by = u.id
+       WHERE e.group_id = $1`,
+      [groupId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching expenses:', err);
+    res.status(500).json({ error: 'Failed to fetch expenses' });
+  }
+});
+
+//member splits route
+app.get('/api/groups/:groupId/member-splits', async (req, res) => {
+  const { groupId } = req.params;
+  try {
+    const result = await db.query(
+      `SELECT es.user_id, es.amount_owed, es.expense_id, e.description, e.amount, e.paid_by, e.settled AS settled, u.first_name || ' ' || u.last_name AS paid_by_name
+FROM expense_splits es
+JOIN expenses e ON es.expense_id = e.id
+JOIN users u ON e.paid_by = u.id
+WHERE e.group_id = $1 AND es.amount_owed > 0`,
+      [groupId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch member splits' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Port running on ${port}`);
 

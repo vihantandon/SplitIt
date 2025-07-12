@@ -554,3 +554,18 @@ background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
   user-select: none;
   border: 2px solid #ede9fe;
 }
+
+.member-expenses-list {
+  margin-top: 0.7em;
+  padding-left: 0.5em;
+}
+.member-expense-detail {
+  background: #f3f4f6;
+  border-radius: 0.4em;
+  padding: 0.4em 0.7em;
+  margin-bottom: 0.4em;
+  font-size: 0.98em;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import { DollarSign, FileText, Users, Minus, Plus } from 'lucide-react'
-import { useState } from 'react'
 import Navbar from './navbar'
 import './addexpense.css'
+import axios from 'axios'
 
-function addexpense() {
+function Addexpense() {
+  const [expenseMessage, setExpenseMessage] = useState("");
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -11,17 +13,38 @@ function addexpense() {
     splitType: 'percentage'
   })
 
-  const [members, setMembers] = useState([
-    { id: 1, name: 'Sophia', percentage: 33 },
-    { id: 2, name: 'Ethan', percentage: 33 },
-    { id: 3, name: 'Olivia', percentage: 34 }
-  ])
+  const [groups, setGroups] = useState([])
+  const [members, setMembers] = useState([])
+  
+  const userId = localStorage.getItem("userId");
 
-  const groups = [
-    { id: 1, name: 'Weekend Trip' },
-    { id: 2, name: 'Roommates' },
-    { id: 3, name: 'Dinner Party' }
-  ]
+  useEffect(() => {
+    async function fetchGroups() {
+      const res = await axios.get(`http://localhost:3000/api/user-groups/${userId}`)
+      setGroups(res.data)
+    }
+    if (userId) fetchGroups()
+  }, [userId])
+
+  useEffect(() => {
+    async function fetchMembers() {
+      if (!formData.group) {
+        setMembers([])
+        return
+      }
+      const res = await axios.get(`http://localhost:3000/api/group-details/${formData.group}`)
+      // Set default split percentage
+      const defaultPercent = res.data.members.length > 0 ? Math.floor(100 / res.data.members.length) : 0
+      setMembers(res.data.members.map((m, i) => ({
+        id: m.id,
+        name: m.name,
+        percentage: i === res.data.members.length - 1
+          ? 100 - defaultPercent * (res.data.members.length - 1)
+          : defaultPercent
+      })))
+    }
+    fetchMembers()
+  }, [formData.group])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -56,18 +79,26 @@ function addexpense() {
     return members.reduce((total, member) => total + member.percentage, 0)
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const totalPercentage = getTotalPercentage()
-    
-    if (totalPercentage !== 100) {
-      alert(`Total percentage must equal 100%. Current total: ${totalPercentage}%`)
-      return
-    }
-
-    console.log('Add expense:', { ...formData, members })
-    // Handle expense creation logic here
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const totalPercentage = getTotalPercentage();
+  if (totalPercentage !== 100) {
+    alert(`Total percentage must equal 100%. Current total: ${totalPercentage}%`);
+    return;
   }
+  const splits = members.map(m => ({
+    userId: m.id,
+    amount: (parseFloat(formData.amount) * m.percentage) / 100
+  }));
+  const paidBy = localStorage.getItem("userId");
+  await axios.post(`http://localhost:3000/api/groups/${formData.group}/expenses`, {
+    description: formData.description,
+    amount: formData.amount,
+    paidBy,
+    splits
+  });
+  // Optionally, redirect or show success
+};
 
   return (
     <div className="add-expense-page">
@@ -219,4 +250,4 @@ function addexpense() {
   )
 }
 
-export default addexpense;
+export default Addexpense;
