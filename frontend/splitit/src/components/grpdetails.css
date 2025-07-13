@@ -238,8 +238,9 @@
 
 .member-info {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
   gap: 1rem;
+  left: 9px;
 }
 
 .member-avatar {
@@ -263,7 +264,8 @@
   font-size: 1rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0;
+  margin: -13px;
+  padding: 10px 0 3px 0;
 }
 
 .member-balance {
@@ -558,7 +560,20 @@ background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
 .member-expenses-list {
   margin-top: 0.7em;
   padding-left: 0.5em;
+  padding-right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  max-height: 350px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent; 
 }
+
+.member-card:not(:has(.member-expenses-list)) {
+  padding-bottom: 1rem; /* reduce padding if no expenses */
+}
+
 .member-expense-detail {
   background: #f3f4f6;
   border-radius: 0.4em;
@@ -566,6 +581,6 @@ background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
   margin-bottom: 0.4em;
   font-size: 0.98em;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  /* flex-direction: column; */
+  gap: 30px;
 }
