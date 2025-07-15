@@ -1,29 +1,26 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import {ArrowLeft,Plus,DollarSign,Trash2,Users,CheckCircle,UserPlus,Mail,} from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import Navbar from "./navbar";
-import axios from "axios";
-import "./grpdetails.css";
+import { useEffect, useState } from "react"
+import { ArrowLeft, Plus, DollarSign, Trash2, Users, CheckCircle, UserPlus, Mail } from "lucide-react"
+import { useNavigate, useParams } from "react-router-dom"
+import Navbar from "./navbar"
+import axios from "axios"
+import "./grpdetails.css"
 
 function GroupDetail() {
-  const navigate = useNavigate();
-  const { groupId } = useParams();
-
-  const [group, setGroup] = useState(null);
-  const [expenses, setExpenses] = useState([]);
-  const [memberSplits, setMemberSplits] = useState([]);
-
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showSettleModal, setShowSettleModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [selectedExpense, setSelectedExpense] = useState(null);
-  const [inviteEmail, setInviteEmail] = useState("");
-
-  const userId = localStorage.getItem("userId");
+  const navigate = useNavigate()
+  const { groupId } = useParams()
+  const [group, setGroup] = useState(null)
+  const [expenses, setExpenses] = useState([])
+  const [memberSplits, setMemberSplits] = useState([])
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showSettleModal, setShowSettleModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [selectedMember, setSelectedMember] = useState(null)
+  const [selectedExpense, setSelectedExpense] = useState(null)
+  const [selectedSplit, setSelectedSplit] = useState(null)
+  const [inviteEmail, setInviteEmail] = useState("")
+  const userId = localStorage.getItem("userId")
 
   // Fetch group details
   useEffect(() => {
@@ -31,9 +28,9 @@ function GroupDetail() {
       fetch(`http://localhost:3000/api/group-details/${groupId}`)
         .then((res) => res.json())
         .then((data) => setGroup(data))
-        .catch((err) => console.error("Error fetching group details:", err));
+        .catch((err) => console.error("Error fetching group details:", err))
     }
-  }, [groupId]);
+  }, [groupId])
 
   // Fetch expenses
   useEffect(() => {
@@ -41,93 +38,100 @@ function GroupDetail() {
       fetch(`http://localhost:3000/api/groups/${groupId}/expenses`)
         .then((res) => res.json())
         .then((data) => setExpenses(data))
-        .catch((err) => console.error("Error fetching expenses:", err));
+        .catch((err) => console.error("Error fetching expenses:", err))
     }
-  }, [groupId]);
+  }, [groupId])
 
   // Fetch splits
   useEffect(() => {
     if (groupId) {
       fetch(`http://localhost:3000/api/groups/${groupId}/member-splits`)
         .then((res) => res.json())
-        .then((data) => setMemberSplits(data));
+        .then((data) => setMemberSplits(data))
     }
-  }, [groupId]);
+  }, [groupId])
 
-  // Settle a single expense
-  const handleSettle = async (expenseId) => {
+  // Settle a specific member's debt for an expense
+  const handleSettleMemberDebt = async (expenseId, memberId) => {
     try {
-      await axios.post(`http://localhost:3000/api/expenses/${expenseId}/settle`, { userId });
+      await axios.post(`http://localhost:3000/api/expenses/${expenseId}/settle-member`, {
+        payerId: Number.parseInt(userId),
+        memberId: memberId,
+      })
 
-      // Refresh data
-      const expenseRes = await fetch(`http://localhost:3000/api/groups/${groupId}/expenses`);
-      const updatedExpenses = await expenseRes.json();
-      setExpenses(updatedExpenses);
+      // Refresh data after settling
+      const splitsRes = await fetch(`http://localhost:3000/api/groups/${groupId}/member-splits`)
+      const updatedSplits = await splitsRes.json()
+      setMemberSplits(updatedSplits)
 
-      const splitsRes = await fetch(`http://localhost:3000/api/groups/${groupId}/member-splits`);
-      const updatedSplits = await splitsRes.json();
-      setMemberSplits(updatedSplits);
     } catch (err) {
-      alert("Failed to settle expense");
+      if (err.response?.status === 403) {
+        alert("Only the person who paid can settle this expense!")
+      } else if (err.response?.status === 400) {
+        alert("No unsettled debt found for this member!")
+      } else {
+        alert("Failed to settle debt")
+      }
+      console.error("Error settling debt:", err)
     }
-  };
+  }
 
   // Utility functions
   const getBalanceText = (member) => {
-    if (member.balance === 0) return "Settled up";
-    if (member.balance > 0) return `is owed ₹${Math.abs(member.balance)}`;
-    return `owes ₹${Math.abs(member.balance)}`;
-  };
+    if (member.balance === 0) return "Settled up"
+    if (member.balance > 0) return `is owed ₹${Math.abs(member.balance)}`
+    return `owes ₹${Math.abs(member.balance)}`
+  }
 
   const getBalanceColor = (member) => {
-    if (member.balance === 0) return "settled";
-    if (member.balance > 0) return "owed";
-    return "owes";
-  };
+    if (member.balance === 0) return "settled"
+    if (member.balance > 0) return "owed"
+    return "owes"
+  }
 
   const handleSettleMoney = (member) => {
-    setSelectedMember(member);
-    setShowSettleModal(true);
-  };
+    setSelectedMember(member)
+    setShowSettleModal(true)
+  }
 
   const confirmSettle = () => {
-    console.log("Settling with:", selectedMember.name);
-    setShowSettleModal(false);
-    setSelectedMember(null);
-  };
+    console.log("Settling with:", selectedMember.name)
+    setShowSettleModal(false)
+    setSelectedMember(null)
+  }
 
   const confirmDelete = async () => {
     try {
-      await axios.post("http://localhost:3000/api/groups/deletegroup", { groupId });
-      setShowDeleteModal(false);
-      navigate("/yourgroups");
+      await axios.post("http://localhost:3000/api/groups/deletegroup", { groupId })
+      setShowDeleteModal(false)
+      navigate("/yourgroups")
     } catch (err) {
-      console.error("Error deleting group:", err);
-      alert("Failed to delete group");
+      console.error("Error deleting group:", err)
+      alert("Failed to delete group")
     }
-  };
+  }
 
   const confirmInvite = async () => {
     try {
       await axios.post("http://localhost:3000/api/groups/invite", {
         groupId,
         email: inviteEmail,
-      });
-      setShowInviteModal(false);
-      setInviteEmail("");
-      const res = await fetch(`http://localhost:3000/api/group-details/${groupId}`);
-      const data = await res.json();
-      setGroup(data);
+      })
+      setShowInviteModal(false)
+      setInviteEmail("")
+      const res = await fetch(`http://localhost:3000/api/group-details/${groupId}`)
+      const data = await res.json()
+      setGroup(data)
     } catch (err) {
-      console.error("Error inviting member:", err);
-      alert("Failed to send invitation");
+      console.error("Error inviting member:", err)
+      alert("Failed to send invitation")
     }
-  };
+  }
 
-  const handleBack = () => navigate("/yourgroups");
-  const handleAddExpense = () => navigate("/addexpense");
+  const handleBack = () => navigate("/yourgroups")
+  const handleAddExpense = () => navigate("/addexpense")
 
-  if (!group) return <div>Loading group details...</div>;
+  if (!group) return <div>Loading group details...</div>
 
   return (
     <div className="group-detail-page">
@@ -177,11 +181,8 @@ function GroupDetail() {
             <div className="members-list">
               {group.members.map((member, index) => {
                 const memberExpenses = memberSplits.filter(
-                  (split) =>
-                    split.user_id === member.id &&
-                    parseFloat(split.amount_owed) > 0 &&
-                    split.user_id !== split.paid_by
-                );
+                  (split) => split.user_id === member.id && Number.parseFloat(split.amount_owed) > 0,
+                )
 
                 return (
                   <div
@@ -196,12 +197,9 @@ function GroupDetail() {
                       <div className="member-details">
                         <h3 className="member-name">{member.name}</h3>
                         {member.balance !== 0 && (
-                          <p className={`member-balance ${getBalanceColor(member)}`}>
-                            {getBalanceText(member)}
-                          </p>
+                          <p className={`member-balance ${getBalanceColor(member)}`}>{getBalanceText(member)}</p>
                         )}
                       </div>
-
                     </div>
 
                     {/* Expenses for this member */}
@@ -212,21 +210,22 @@ function GroupDetail() {
                             <span>
                               <strong>{split.description}</strong> - ₹{split.amount_owed}
                             </span>
-                            <span style={{ fontSize: "0.95em", color: "#64748b" }}>
-                              Paid by: {split.paid_by_name}
-                            </span>
-                            {split.paid_by == userId && (
-                              split.settled ? (
-                                <div className="settled-badge">
-                                  <CheckCircle className="check-icon" />
-                                  Settled
-                                </div>
-                              ) : (
+                            <span style={{ fontSize: "0.95em", color: "#64748b" }}>Paid by: {split.paid_by_name}</span>
+
+                            {/* Show settled status or settle button */}
+                            {split.settled ? (
+                              <div className="settled-badge">
+                                <CheckCircle className="check-icon" />
+                                Settled
+                              </div>
+                            ) : (
+                              // Show settle button ONLY if current user is the one who paid
+                              split.paid_by == userId && (
                                 <button
                                   className="settle-btn"
                                   onClick={() => {
-                                    setSelectedExpense(expenses.find((e) => e.id === split.expense_id));
-                                    setShowSettleModal(true);
+                                    setSelectedSplit(split)
+                                    setShowSettleModal(true)
                                   }}
                                 >
                                   <DollarSign className="settle-icon" />
@@ -246,15 +245,8 @@ function GroupDetail() {
                         Settle Up
                       </button>
                     )}
-
-                    {/* {member.balance === 0 && (
-                      <div className="settled-badge">
-                        <CheckCircle className="check-icon" />
-                        Settled
-                      </div>
-                    )} */}
                   </div>
-                );
+                )
               })}
             </div>
           </div>
@@ -266,9 +258,7 @@ function GroupDetail() {
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Delete Group</h3>
-            <p className="modal-text">
-              Are you sure you want to delete "{group.name}"? This action cannot be undone.
-            </p>
+            <p className="modal-text">Are you sure you want to delete "{group.name}"? This action cannot be undone.</p>
             <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setShowDeleteModal(false)}>
                 Cancel
@@ -281,37 +271,40 @@ function GroupDetail() {
         </div>
       )}
 
-      {showSettleModal && (selectedMember || selectedExpense) && (
+      {showSettleModal && (selectedMember || selectedSplit) && (
         <div
           className="modal-overlay"
           onClick={() => {
-            setShowSettleModal(false);
-            setSelectedMember(null);
-            setSelectedExpense(null);
+            setShowSettleModal(false)
+            setSelectedMember(null)
+            setSelectedSplit(null)
           }}
         >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Settle Money</h3>
             <p className="modal-text">
-              {selectedExpense ? (
+              {selectedSplit ? (
                 <>
-                  Settle <strong>{selectedExpense.description}</strong> of ₹
-                  {selectedExpense.amount}?<br />
-                  Paid by: {selectedExpense.paid_by_name}
+                  Settle <strong>{selectedSplit.description}</strong> debt of ₹{selectedSplit.amount_owed}?
+                  <br />
+                  Member: {group.members.find((m) => m.id === selectedSplit.user_id)?.name}
+                  
                 </>
               ) : selectedMember ? (
-                selectedMember.balance > 0
-                  ? `${selectedMember.name} will pay you ₹${Math.abs(selectedMember.balance)}`
-                  : `You will pay ${selectedMember.name} ₹${Math.abs(selectedMember.balance)}`
+                selectedMember.balance > 0 ? (
+                  `${selectedMember.name} will pay you ₹${Math.abs(selectedMember.balance)}`
+                ) : (
+                  `You will pay ${selectedMember.name} ₹${Math.abs(selectedMember.balance)}`
+                )
               ) : null}
             </p>
             <div className="modal-actions">
               <button
                 className="cancel-btn"
                 onClick={() => {
-                  setShowSettleModal(false);
-                  setSelectedMember(null);
-                  setSelectedExpense(null);
+                  setShowSettleModal(false)
+                  setSelectedMember(null)
+                  setSelectedSplit(null)
                 }}
               >
                 Cancel
@@ -319,13 +312,13 @@ function GroupDetail() {
               <button
                 className="confirm-settle-btn"
                 onClick={async () => {
-                  if (selectedExpense) {
-                    await handleSettle(selectedExpense.id);
-                    setSelectedExpense(null);
+                  if (selectedSplit) {
+                    await handleSettleMemberDebt(selectedSplit.expense_id, selectedSplit.user_id)
+                    setSelectedSplit(null)
                   } else if (selectedMember) {
-                    confirmSettle();
+                    confirmSettle()
                   }
-                  setShowSettleModal(false);
+                  setShowSettleModal(false)
                 }}
               >
                 Mark as Settled
@@ -339,9 +332,8 @@ function GroupDetail() {
         <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title">Invite Member</h3>
-            <p className="modal-text">
-              Enter the email address of the person you want to invite to "{group.name}".
-            </p>
+            <p className="modal-text">Enter the email address of the person you want to invite to "{group.name}".</p>
+
             <div className="invite-input-wrapper">
               <Mail className="invite-input-icon" />
               <input
@@ -353,15 +345,12 @@ function GroupDetail() {
                 autoFocus
               />
             </div>
+
             <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setShowInviteModal(false)}>
                 Cancel
               </button>
-              <button
-                className="confirm-invite-btn"
-                onClick={confirmInvite}
-                disabled={!inviteEmail.trim()}
-              >
+              <button className="confirm-invite-btn" onClick={confirmInvite} disabled={!inviteEmail.trim()}>
                 Send Invitation
               </button>
             </div>
@@ -369,7 +358,7 @@ function GroupDetail() {
         </div>
       )}
     </div>
-  );
+  )
 }
 
-export default GroupDetail;
+export default GroupDetail
