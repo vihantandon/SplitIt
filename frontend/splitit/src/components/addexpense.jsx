@@ -1,22 +1,22 @@
-import { useEffect, useState } from 'react'
-import { DollarSign, FileText, Users, Minus, Plus } from 'lucide-react'
-import Navbar from './navbar'
-import './addexpense.css'
-import axios from 'axios'
+"use client"
+
+import { useEffect, useState } from "react"
+import { DollarSign, FileText, Users, Minus, Plus } from "lucide-react"
+import Navbar from "./navbar"
+import "./addexpense.css"
+import axios from "axios"
 
 function Addexpense() {
-  const [expenseMessage, setExpenseMessage] = useState("");
+  const [expenseMessage, setExpenseMessage] = useState("")
   const [formData, setFormData] = useState({
-    description: '',
-    amount: '',
-    group: '',
-    splitType: 'percentage'
+    description: "",
+    amount: "",
+    group: "",
+    splitType: "manual",
   })
-
   const [groups, setGroups] = useState([])
   const [members, setMembers] = useState([])
-  
-  const userId = localStorage.getItem("userId");
+  const userId = localStorage.getItem("userId")
 
   useEffect(() => {
     async function fetchGroups() {
@@ -33,72 +33,94 @@ function Addexpense() {
         return
       }
       const res = await axios.get(`http://localhost:3000/api/group-details/${formData.group}`)
-      // Set default split percentage
-      const defaultPercent = res.data.members.length > 0 ? Math.floor(100 / res.data.members.length) : 0
-      setMembers(res.data.members.map((m, i) => ({
-        id: m.id,
-        name: m.name,
-        percentage: i === res.data.members.length - 1
-          ? 100 - defaultPercent * (res.data.members.length - 1)
-          : defaultPercent
-      })))
+
+      // Set default amount to 0 for each member
+      setMembers(
+        res.data.members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          amount: 0,
+        })),
+      )
     }
     fetchMembers()
   }, [formData.group])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
-  const handlePercentageChange = (memberId, newPercentage) => {
-    const percentage = Math.max(0, Math.min(100, parseInt(newPercentage) || 0))
-    setMembers(prev => 
-      prev.map(member => 
-        member.id === memberId 
-          ? { ...member, percentage }
-          : member
-      )
+  const handleMemberAmountChange = (memberId, newAmount) => {
+    const amount = Math.max(0, Number.parseFloat(newAmount) || 0)
+    setMembers((prev) => prev.map((member) => (member.id === memberId ? { ...member, amount } : member)))
+  }
+
+  const adjustAmount = (memberId, increment) => {
+    setMembers((prev) =>
+      prev.map((member) =>
+        member.id === memberId ? { ...member, amount: Math.max(0, member.amount + increment) } : member,
+      ),
     )
   }
 
-  const adjustPercentage = (memberId, increment) => {
-    setMembers(prev => 
-      prev.map(member => 
-        member.id === memberId 
-          ? { ...member, percentage: Math.max(0, Math.min(100, member.percentage + increment)) }
-          : member
+  const getTotalSplitAmount = () => {
+    return members.reduce((total, member) => total + member.amount, 0)
+  }
+
+  const getRemainingAmount = () => {
+    const totalExpense = Number.parseFloat(formData.amount) || 0
+    const totalSplit = getTotalSplitAmount()
+    return totalExpense - totalSplit
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    const totalExpense = Number.parseFloat(formData.amount) || 0
+    const totalSplitAmount = getTotalSplitAmount()
+
+    if (Math.abs(totalSplitAmount - totalExpense) > 0.01) {
+      // Allow for small floating point differences
+      alert(
+        `Total split amount (₹${totalSplitAmount.toFixed(2)}) must equal the expense amount (₹${totalExpense.toFixed(2)}). Remaining: ₹${getRemainingAmount().toFixed(2)}`,
       )
-    )
-  }
+      return
+    }
 
-  const getTotalPercentage = () => {
-    return members.reduce((total, member) => total + member.percentage, 0)
-  }
+    const splits = members.map((m) => ({
+      userId: m.id,
+      amount: m.amount,
+    }))
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  const totalPercentage = getTotalPercentage();
-  if (totalPercentage !== 100) {
-    alert(`Total percentage must equal 100%. Current total: ${totalPercentage}%`);
-    return;
+    const paidBy = localStorage.getItem("userId")
+
+    try {
+      await axios.post(`http://localhost:3000/api/groups/${formData.group}/expenses`, {
+        description: formData.description,
+        amount: formData.amount,
+        paidBy,
+        splits,
+      })
+
+      // Reset form
+      setFormData({
+        description: "",
+        amount: "",
+        group: "",
+        splitType: "manual",
+      })
+      setMembers([])
+      setExpenseMessage("Expense added successfully!")
+      setTimeout(() => setExpenseMessage(""), 3000)
+    } catch (error) {
+      console.error("Error adding expense:", error)
+      alert("Failed to add expense")
+    }
   }
-  const splits = members.map(m => ({
-    userId: m.id,
-    amount: (parseFloat(formData.amount) * m.percentage) / 100
-  }));
-  const paidBy = localStorage.getItem("userId");
-  await axios.post(`http://localhost:3000/api/groups/${formData.group}/expenses`, {
-    description: formData.description,
-    amount: formData.amount,
-    paidBy,
-    splits
-  });
-  // Optionally, redirect or show success
-};
 
   return (
     <div className="add-expense-page">
@@ -111,10 +133,14 @@ function Addexpense() {
           <div className="add-expense-card">
             <h1 className="page-title">Add Expense</h1>
 
+            {expenseMessage && <div className="success-message">{expenseMessage}</div>}
+
             <form className="add-expense-form" onSubmit={handleSubmit}>
               {/* Description */}
               <div className="form-group">
-                <label htmlFor="description" className="form-label">Description</label>
+                <label htmlFor="description" className="form-label">
+                  Description
+                </label>
                 <div className="input-wrapper">
                   <FileText className="input-icon" />
                   <input
@@ -132,7 +158,9 @@ function Addexpense() {
 
               {/* Amount */}
               <div className="form-group">
-                <label htmlFor="amount" className="form-label">Amount</label>
+                <label htmlFor="amount" className="form-label">
+                  Total Amount
+                </label>
                 <div className="input-wrapper">
                   <DollarSign className="input-icon" />
                   <input
@@ -152,7 +180,9 @@ function Addexpense() {
 
               {/* Group */}
               <div className="form-group">
-                <label htmlFor="group" className="form-label">Group</label>
+                <label htmlFor="group" className="form-label">
+                  Group
+                </label>
                 <div className="input-wrapper">
                   <Users className="input-icon" />
                   <select
@@ -164,7 +194,7 @@ function Addexpense() {
                     required
                   >
                     <option value="">Select a group</option>
-                    {groups.map(group => (
+                    {groups.map((group) => (
                       <option key={group.id} value={group.id}>
                         {group.name}
                       </option>
@@ -175,71 +205,76 @@ function Addexpense() {
 
               {/* Split */}
               <div className="form-group">
-                <label className="form-label">Split</label>
+                <label className="form-label">Split Method</label>
                 <div className="split-type-container">
                   <div className="split-type-option">
                     <input
                       type="radio"
-                      id="percentage"
+                      id="manual"
                       name="splitType"
-                      value="percentage"
-                      checked={formData.splitType === 'percentage'}
+                      value="manual"
+                      checked={formData.splitType === "manual"}
                       onChange={handleInputChange}
                       className="radio-input"
                     />
-                    <label htmlFor="percentage" className="radio-label">
-                      Split by percentage
+                    <label htmlFor="manual" className="radio-label">
+                      Manual split by amount
                     </label>
                   </div>
                 </div>
               </div>
 
               {/* Members */}
-              <div className="form-group">
-                <label className="form-label">
-                  Members 
-                  <span className={`total-percentage ${getTotalPercentage() === 100 ? 'valid' : 'invalid'}`}>
-                    (Total: {getTotalPercentage()}%)
-                  </span>
-                </label>
-                <div className="members-container">
-                  {members.map(member => (
-                    <div key={member.id} className="member-row">
-                      <div className="member-info">
-                        <span className="member-name">{member.name}</span>
-                        <span className="member-label">Percentage</span>
-                      </div>
-                      <div className="percentage-controls">
-                        <button
-                          type="button"
-                          className="percentage-btn minus"
-                          onClick={() => adjustPercentage(member.id, -1)}
-                        >
-                          <Minus className="btn-icon" />
-                        </button>
-                        <input
-                          type="number"
-                          value={member.percentage}
-                          onChange={(e) => handlePercentageChange(member.id, e.target.value)}
-                          className="percentage-input"
-                          min="0"
-                          max="100"
-                        />
-                        <button
-                          type="button"
-                          className="percentage-btn plus"
-                          onClick={() => adjustPercentage(member.id, 1)}
-                        >
-                          <Plus className="btn-icon" />
-                        </button>
-                      </div>
+              {members.length > 0 && (
+                <div className="form-group">
+                  <label className="form-label">
+                    Split Between Members
+                    <div className="amount-summary">
+                      <span className={`total-amount ${Math.abs(getRemainingAmount()) < 0.01 ? "valid" : "invalid"}`}>
+                        Total Split: ₹{getTotalSplitAmount().toFixed(2)} / ₹
+                        {(Number.parseFloat(formData.amount) || 0).toFixed(2)}
+                      </span>
+                      {Math.abs(getRemainingAmount()) > 0.01 && (
+                        <span className="remaining-amount">Remaining: ₹{getRemainingAmount().toFixed(2)}</span>
+                      )}
                     </div>
-                  ))}
+                  </label>
+                  <div className="members-container">
+                    {members.map((member) => (
+                      <div key={member.id} className="member-row">
+                        <div className="member-info">
+                          <span className="member-name">{member.name}</span>
+                          <span className="member-label">Amount</span>
+                        </div>
+                        <div className="amount-controls">
+                          <button
+                            type="button"
+                            className="amount-btn minus"
+                            onClick={() => adjustAmount(member.id, -1)}
+                          >
+                            <Minus className="btn-icon" />
+                          </button>
+                          <input
+                            type="number"
+                            value={member.amount}
+                            onChange={(e) => handleMemberAmountChange(member.id, e.target.value)}
+                            className="amount-input"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                          />
+                          <button type="button" className="amount-btn plus" onClick={() => adjustAmount(member.id, 1)}>
+                            <Plus className="btn-icon" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Save Expense Button */}
-              <button type="submit" className="save-expense-btn">
+              <button type="submit" className="save-expense-btn" disabled={Math.abs(getRemainingAmount()) > 0.01}>
                 Save Expense
               </button>
             </form>
@@ -250,4 +285,4 @@ function Addexpense() {
   )
 }
 
-export default Addexpense;
+export default Addexpense
