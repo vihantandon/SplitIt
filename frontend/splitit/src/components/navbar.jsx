@@ -35,7 +35,7 @@ function Navbar({ activeItem = '' }) {
   }
 
   return (
-    <header className="navbar">
+    <header className="navbarr">
       <div className="navbarcontainer">
         {/* Logo */}
         <div className="navbar-logo" onClick={() => navigate('/')}>

@@ -1,6 +1,8 @@
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(to right, #9333ea, #4f46e5);
+  background: linear-gradient(to right, #263ea7, #7a48ac);
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 5rem 1rem;
 }
 
@@ -119,7 +121,7 @@
 
 /* CTA Section */
 .cta-section {
-  background: linear-gradient(to right, #9333ea, #4f46e5);
+  background: linear-gradient(to right, #263ea7, #7a48ac);
   padding: 5rem 1rem;
 }
 
