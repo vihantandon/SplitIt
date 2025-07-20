@@ -37,7 +37,21 @@ function signin() {
       localStorage.setItem('firstName', res.data.user.firstName || '');
       localStorage.setItem('lastName', res.data.user.lastName || '');
 
-      navigate('/yourgroups');
+      const token = localStorage.getItem("pendingInviteToken");
+if (token) {
+  axios.post("http://localhost:3000/api/invite/accept", { token,userEmail: localStorage.getItem('userEmail') })
+    .then(() => {
+      localStorage.removeItem("pendingInviteToken");
+      navigate("/yourgroups");
+    })
+    .catch(() => {
+      localStorage.removeItem("pendingInviteToken");
+      navigate("/yourgroups");
+    });
+} else {
+  navigate("/yourgroups");
+}
+
     } catch(err){
       console.error('SignUp failed: ',err);
       alert('Wrong Credentials')
@@ -57,7 +71,20 @@ function signin() {
     localStorage.setItem('lastName', res.data.user.lastName || '');
     // localStorage.setItem('userImage', res.data.user.image || '');
 
-    navigate('/yourgroups');
+    const token = localStorage.getItem("pendingInviteToken");
+if (token) {
+  axios.post("http://localhost:3000/api/invite/accept", { token ,userEmail: localStorage.getItem('userEmail')})
+    .then(() => {
+      localStorage.removeItem("pendingInviteToken");
+      navigate("/yourgroups");
+    })
+    .catch(() => {
+      localStorage.removeItem("pendingInviteToken");
+      navigate("/yourgroups");
+    });
+} else {
+  navigate("/yourgroups");
+}
   } catch (err) {
     console.error('Google SignIn failed: ', err);
     alert('Google SignIn failed');

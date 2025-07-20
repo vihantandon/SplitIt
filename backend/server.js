@@ -3,6 +3,8 @@ import cors from "cors"
 import pg from "pg"
 import bcrypt from "bcrypt"
 import { OAuth2Client } from "google-auth-library"
+import crypto from "crypto"
+import nodemailer from "nodemailer"
 
 const client = new OAuth2Client("247414368917-r36k47jv56hi8dei8oi2hqdmech6qbba.apps.googleusercontent.com")
 const app = express()
@@ -15,6 +17,14 @@ app.use(
   }),
 )
 app.use(express.json())
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "tandon.vihantandon@gmail.com",
+    pass: "uzwp kqwl hqje mtzb ",
+  },
+});
 
 const db = new pg.Client({
   user: "postgres",
@@ -213,7 +223,7 @@ app.get("/api/group-details/:groupId", async (req, res) => {
 app.post("/api/groups/deletegroup", async (req, res) => {
   const { groupId } = req.body
   try {
-    await db.query("DELETE FROM group_members WHERE group_id = $1", [groupId])
+    // await db.query("DELETE FROM group_members WHERE group_id = $1", [groupId])
     await db.query("DELETE FROM groups WHERE id = $1", [groupId])
     res.json({ message: "Group deleted successfully" })
   } catch (err) {
@@ -223,22 +233,84 @@ app.post("/api/groups/deletegroup", async (req, res) => {
 })
 
 // Invite member route from group details
+// app.post("/api/groups/invite", async (req, res) => {
+//   const { groupId, email } = req.body
+//   try {
+//     const userResult = await db.query("select id from users where email = $1", [email])
+//     if (userResult.rows.length === 0) {
+//       return res.status(404).json({ error: "User not found" })
+//     }
+//     const userId = userResult.rows[0].id
+//     await db.query("insert into group_members (user_id,group_id) values ($1,$2) on conflict do nothing", [
+//       userId,
+//       groupId,
+//     ])
+//     res.json({ message: "Member invited successfully" })
+//   } catch (err) {
+//     console.error("Error inviting member:", err)
+//     res.status(500).json({ error: "Failed to invite member" })
+//   }
+// })
+
+
 app.post("/api/groups/invite", async (req, res) => {
-  const { groupId, email } = req.body
-  try {
-    const userResult = await db.query("select id from users where email = $1", [email])
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" })
-    }
-    const userId = userResult.rows[0].id
-    await db.query("insert into group_members (user_id,group_id) values ($1,$2) on conflict do nothing", [
-      userId,
-      groupId,
-    ])
-    res.json({ message: "Member invited successfully" })
-  } catch (err) {
-    console.error("Error inviting member:", err)
-    res.status(500).json({ error: "Failed to invite member" })
+  const { groupId, email, senderName, groupName } = req.body
+  const token = crypto.randomBytes(32).toString("hex");
+
+  try{
+    await db.query(`insert into group_invites (group_id, email, token) values ($1, $2, $3)`,
+      [groupId, email, token]);
+
+      const inviteLink = `http://localhost:5173/invite/${token}`;
+
+      await transporter.sendMail({
+      from: `SplitIt <splititappmailer@gmail.com>`,
+      to: email,
+      subject: `${senderName} invited you to join the SplitIt group "${groupName}"!`,
+      html: `<p>Hi,</p>
+             <p><strong>${senderName}</strong> has invited you to join the SplitIt group <strong>"${groupName}"</strong>.</p>
+             <p><a href="${inviteLink}">Click here to accept the invitation</a></p>
+             <p>This link will expire in 7 days.</p>
+             <br>
+             <p>Thanks,<br/>The SplitIt Team</p>`
+    });
+    res.json({ success: true });
+  }catch (err){
+    console.error("Invite error:", err);
+    res.status(500).json({ error: "Invite failed." });
+  }
+
+})
+
+app.post("/api/invite/accept", async (req,res)=>{
+  const {token,userEmail} = req.body
+  // const userEmail = req.body.userEmail || req.user?.email;
+   if (!userEmail) return res.status(400).json({ error: "Missing user email." });
+
+   try{
+    const inviteResult = await db.query(
+      `SELECT * FROM group_invites WHERE token=$1 AND expires_at > NOW() AND accepted=false`,
+      [token]
+    );
+
+    const invite = inviteResult.rows[0];
+    if (!invite) return res.status(400).json({ error: "Invalid or expired invite." });
+
+    if (invite.email !== userEmail) return res.status(403).json({ error: "Email mismatch." });
+
+    const userRes = await db.query(`SELECT id FROM users WHERE email=$1`, [userEmail]);
+    const userId = userRes.rows[0]?.id;
+    if (!userId) return res.status(404).json({ error: "User not found." });
+
+    await db.query(`INSERT INTO group_members (user_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [
+      userId, invite.group_id
+    ]);
+
+    await db.query(`UPDATE group_invites SET accepted=true WHERE token=$1`, [token]);
+     res.json({ success: true });
+   }catch (err) {
+    console.error("Error accepting invite:", err);
+    res.status(500).json({ error: "Failed to accept invite." });
   }
 })
 

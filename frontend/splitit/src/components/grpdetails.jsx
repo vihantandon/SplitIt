@@ -116,6 +116,8 @@ function GroupDetail() {
       await axios.post("http://localhost:3000/api/groups/invite", {
         groupId,
         email: inviteEmail,
+        senderName: localStorage.getItem("firstName") + " " + localStorage.getItem("lastName"),
+        groupName: group.name,
       })
       setShowInviteModal(false)
       setInviteEmail("")

@@ -29,6 +29,22 @@ function signup() {
       const res = await axios.post('http://localhost:3000/api/signup', formData);
       console.log(res.data);
       alert('Signup successful');
+
+      const token = localStorage.getItem("pendingInviteToken");
+if (token) {
+  axios.post("http://localhost:3000/api/invite/accept", { token ,userEmail: localStorage.getItem('userEmail')})
+    .then(() => {
+      localStorage.removeItem("pendingInviteToken");
+      navigate("/yourgroups");
+    })
+    .catch(() => {
+      localStorage.removeItem("pendingInviteToken");
+      navigate("/yourgroups");
+    });
+} else {
+  navigate("/yourgroups");
+}
+
     } catch(err){
       console.error('SignUp failed: ',err);
       alert('Signup failed')

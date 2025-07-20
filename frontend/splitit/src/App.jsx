@@ -9,6 +9,7 @@ import AddExpense from "./components/addexpense";
 import YourGroups from "./components/yourgroups";
 import GroupDetail from "./components/grpdetails";
 import ProtectedRoutes from "./components/ProtectedRoutes"; //after logging out the back button redirects to signin page
+import HandleInvite from "./components/handleinvite"; 
 
 function App(){
 
@@ -33,6 +34,7 @@ function App(){
             <Route path = "/yourgroups" element={<ProtectedRoutes><YourGroups/></ProtectedRoutes>}/>
             <Route path = "/grpdetails" element={<ProtectedRoutes><GroupDetail/></ProtectedRoutes>}/>
             <Route path = "/grpdetails/:groupId" element={<ProtectedRoutes><GroupDetail/></ProtectedRoutes>}/>
+            <Route path = "/invite/:token" element={<HandleInvite/>}/>
             {/* Catch-all route for 404 */}
          </Routes>
         </BrowserRouter>
