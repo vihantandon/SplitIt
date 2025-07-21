@@ -144,11 +144,12 @@ app.get("/api/user-groups/:userId", async (req, res) => {
 app.post("/api/groups", async (req, res) => {
   const { groupName, inviteEmails, creatorEmail } = req.body
   try {
-    const creatorResult = await db.query("SELECT id FROM users WHERE email = $1", [creatorEmail])
+    const creatorResult = await db.query("SELECT id,first_name FROM users WHERE email = $1", [creatorEmail])
     if (creatorResult.rows.length === 0) {
       return res.status(404).json({ error: "Creator not found" })
     }
     const creatorId = creatorResult.rows[0].id
+    const senderName = creatorResult.rows[0].first_name
 
     const groupResult = await db.query("INSERT INTO groups (name, created_by) VALUES ($1, $2) RETURNING id", [
       groupName,
@@ -161,14 +162,24 @@ app.post("/api/groups", async (req, res) => {
 
     // Add invited users as members (if they exist)
     for (const email of inviteEmails) {
-      const userResult = await db.query("SELECT id FROM users WHERE email = $1", [email])
-      if (userResult.rows.length > 0) {
-        const userId = userResult.rows[0].id
-        await db.query("INSERT INTO group_members (user_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [
-          userId,
-          groupId,
-        ])
-      }
+      const token = crypto.randomBytes(32).toString("hex");
+
+      await db.query("insert into group_invites (group_id,email,token) values ($1,$2,$3)",
+      [groupId,email,token]);
+
+      const inviteLink = `http://localhost:5173/invite/${token}`;
+
+      await transporter.sendMail({
+        from: `SplitIt <splititappmailer@gmail.com>`,
+        to: email,
+        subject: `${senderName} invited you to join the SplitIt group "${groupName}"!`,
+        html: `<p>Hi,</p>
+               <p><strong>${senderName}</strong> has invited you to join the SplitIt group <strong>"${groupName}"</strong>.</p>
+               <p><a href="${inviteLink}">Click here to accept the invitation</a></p>
+               <p>This link will expire in 7 days.</p>
+               <br>
+               <p>Thanks,<br/>The SplitIt Team</p>`
+      });
     }
 
     res.json({ message: "Group created successfully", groupId })
